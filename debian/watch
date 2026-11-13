@@ -1,0 +1,6 @@
+Version: 5
+
+Source: https://github.com/pulsar-edit/pulsar/tags
+Matching-Pattern: (?:.*/)?archive/refs/tags/v?(\d[\d.]+)\.tar\.gz
+Filenamemangle: s/(?:.*\/)?v?(\d[\d.]+)\.tar\.gz/pulsar-$1.tar.gz/
+Dversionmangle: s/-\d+(?:parrot\d*)?$//

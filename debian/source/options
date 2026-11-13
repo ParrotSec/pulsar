@@ -1,0 +1,12 @@
+tar-ignore = node_modules
+tar-ignore = ppm/node_modules
+tar-ignore = ppm/bin/node
+tar-ignore = apm-node-*
+tar-ignore = debian/tools
+tar-ignore = debian/yarn-cache
+tar-ignore = debian/npm-cache
+tar-ignore = debian/electron-cache
+tar-ignore = debian/.debhelper
+tar-ignore = debian/changelog.dch
+tar-ignore = .*.swp
+tar-ignore = *~

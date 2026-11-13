@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Pulsar
+GenericName=Text Editor
+Comment=A community-led hyper-hackable text editor
+Exec=pulsar %F
+TryExec=pulsar
+Icon=pulsar
+Terminal=false
+Categories=Development;TextEditor;
+MimeType=text/plain;
+StartupWMClass=Pulsar

@@ -1,0 +1,108 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+include /usr/share/dpkg/default.mk
+
+# Keep all fetch/build state inside the source tree so it is ignored by
+# tar-ignore and removable by dh_auto_clean.
+export YARN_CACHE_FOLDER := $(CURDIR)/debian/yarn-cache
+export npm_config_cache := $(CURDIR)/debian/npm-cache
+export ELECTRON_CACHE := $(CURDIR)/debian/electron-cache
+export npm_config_update_notifier := false
+# No Playwright-managed browsers and no visual tests in a package build.
+export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD := 1
+
+YARN := $(CURDIR)/debian/tools/node_modules/.bin/yarn
+
+%:
+	dh $@
+
+override_dh_auto_clean:
+	dh_clean
+	rm -rf $(CURDIR)/node_modules $(CURDIR)/ppm/node_modules \
+	       $(CURDIR)/ppm/bin/node $(CURDIR)/apm-node-* \
+	       $(CURDIR)/debian/tools $(CURDIR)/debian/yarn-cache \
+	       $(CURDIR)/debian/npm-cache $(CURDIR)/debian/electron-cache
+
+override_dh_auto_build:
+	# Pulsar pins a Yarn Classic (v1) lockfile; Debian's yarnpkg is Yarn 4,
+	# which cannot read it. Bootstrap Yarn Classic into a private prefix,
+	# the same way upstream CI does ("npm install -g yarn").
+	mkdir -p $(CURDIR)/debian/tools
+	npm install --prefix $(CURDIR)/debian/tools --no-audit --no-fund \
+		--no-progress yarn@1.22.22
+	# Install JS dependencies. The electron package's postinstall fetches
+	# the pinned Electron 32.3.3 runtime into node_modules/electron/dist;
+	# Parrot ships no electron package, so the runtime is fetched at build
+	# time exactly as upstream pins it (checksum-verified by @electron/get).
+	$(YARN) install --ignore-engines --frozen-lockfile
+	# @parcel/watcher ships prebuilt N-API binaries as optional
+	# dependencies; drop its binding.gyp so electron-rebuild never tries to
+	# compile it from source, and drop the musl prebuilds which can never
+	# load on a glibc system (mirrors upstream CI exactly).
+	rm -f $(CURDIR)/node_modules/@parcel/watcher/binding.gyp
+	rm -rf $(CURDIR)/node_modules/@parcel/watcher/build
+	rm -rf $(CURDIR)/node_modules/@parcel/watcher-*-musl
+	node -e "require('@parcel/watcher'); console.log('prebuilt @parcel/watcher loads')"
+	# Rebuild the native modules (superstring, fuzzy-native, ctags,
+	# git-utils, keytar, spellchecker, ...) against the Electron ABI.
+	$(YARN) build
+	# Build ppm (the bundled package manager). Its postinstall fetches the
+	# pinned Node v20.18.1 into ppm/bin/node and rebuilds ppm's own native
+	# dependencies with it. TMPDIR is pointed inside the tree because
+	# download-node.js moves the unpacked runtime into ppm/bin and cannot
+	# cross devices (upstream does the same in CI).
+	cd $(CURDIR)/ppm && TMPDIR=$(CURDIR) $(YARN) install --ignore-engines --frozen-lockfile
+
+override_dh_auto_test:
+
+override_dh_auto_install:
+	# Mirror upstream's electron-builder deb layout, but under
+	# /usr/lib/pulsar instead of /opt/Pulsar: the Electron runtime is
+	# unpacked at the root, the application payload lives in
+	# resources/app/, and pulsar.sh (installed in resources/) resolves the
+	# install root relative to its own path.
+	install -d $(CURDIR)/debian/pulsar/usr/lib/pulsar/resources/app
+	# Electron runtime (binary is renamed `pulsar`, as upstream does).
+	cp -a $(CURDIR)/node_modules/electron/dist/. \
+		$(CURDIR)/debian/pulsar/usr/lib/pulsar/
+	mv $(CURDIR)/debian/pulsar/usr/lib/pulsar/electron \
+		$(CURDIR)/debian/pulsar/usr/lib/pulsar/pulsar
+	# Application payload, matching upstream's electron-builder `files`
+	# list.
+	for item in package.json dot-atom exports resources src static vendor \
+	            locales node_modules spec/jasmine-test-runner.js \
+	            spec/helpers spec/runners; do \
+		cp -a $(CURDIR)/$$item \
+			$(CURDIR)/debian/pulsar/usr/lib/pulsar/resources/app/; \
+	done
+	# ppm is shipped inside the app payload (minus its build-time
+	# node_modules for git-utils debris); the bin wrapper scripts and the
+	# bundled node are kept.
+	cp -a $(CURDIR)/ppm \
+		$(CURDIR)/debian/pulsar/usr/lib/pulsar/resources/app/ppm
+	# Launcher script and icon as extraResources (upstream copies these to
+	# resources/ and the post-install script links them into /usr/bin).
+	cp -a $(CURDIR)/pulsar.sh \
+		$(CURDIR)/debian/pulsar/usr/lib/pulsar/resources/pulsar.sh
+	cp -a $(CURDIR)/resources/app-icons/beta.png \
+		$(CURDIR)/debian/pulsar/usr/lib/pulsar/resources/pulsar.png
+	cp -a $(CURDIR)/LICENSE.md \
+		$(CURDIR)/debian/pulsar/usr/lib/pulsar/resources/LICENSE.md
+	# Command-line entry points.
+	install -d $(CURDIR)/debian/pulsar/usr/bin
+	dh_link usr/lib/pulsar/resources/pulsar.sh usr/bin/pulsar
+	dh_link usr/lib/pulsar/resources/app/ppm/bin/ppm usr/bin/ppm
+	# Desktop integration.
+	install -d $(CURDIR)/debian/pulsar/usr/share/applications
+	install -Dm644 debian/pulsar.desktop \
+		$(CURDIR)/debian/pulsar/usr/share/applications/pulsar.desktop
+	set -e; \
+	for size in 16 22 24 32 48 64 128 256 384 512; do \
+		if [ -f $(CURDIR)/resources/icons/$${size}x$${size}.png ]; then \
+			install -Dm644 $(CURDIR)/resources/icons/$${size}x$${size}.png \
+				$(CURDIR)/debian/pulsar/usr/share/icons/hicolor/$${size}x$${size}/apps/pulsar.png; \
+		fi; \
+	done
+	install -Dm644 $(CURDIR)/resources/app-icons/beta.svg \
+		$(CURDIR)/debian/pulsar/usr/share/icons/hicolor/scalable/apps/pulsar.svg

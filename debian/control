@@ -1,0 +1,41 @@
+Source: pulsar
+Section: editors
+Priority: optional
+Maintainer: Parrot Dev Team <team@parrotsec.org>
+Uploaders: Lorenzo "Palinuro" Faletra <palinuro@parrotsec.org>
+Build-Depends:
+ debhelper-compat (= 13),
+ nodejs (>= 20.18.1),
+ npm,
+ python3,
+ python3-setuptools,
+ build-essential,
+ pkgconf,
+ git,
+ ca-certificates,
+ libx11-dev,
+ libxkbfile-dev,
+ libxkbcommon-dev,
+ libxkbcommon-x11-dev,
+ libwayland-dev,
+ libsecret-1-dev,
+ zlib1g-dev,
+Standards-Version: 4.7.2
+Rules-Requires-Root: no
+Homepage: https://pulsar-edit.dev
+Vcs-Git: https://gitlab.com/parrotsec/packages/pulsar.git
+Vcs-Browser: https://gitlab.com/parrotsec/packages/pulsar
+
+Package: pulsar
+Architecture: any
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends},
+Description: Community-led hyper-hackable text editor
+ Pulsar is a community-led continuation of the Atom text editor. It is a
+ hackable editor built on Electron, with a large ecosystem of community
+ packages installable through its bundled package manager (ppm).
+ .
+ This package installs the editor runtime (the pinned Electron bundled at
+ build time) under /usr/lib/pulsar together with the pulsar and ppm
+ command-line entry points, desktop integration files and icons.

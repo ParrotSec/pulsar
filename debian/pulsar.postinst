@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+# Set the suid bit on Electron's chrome-sandbox only on systems without
+# working user namespaces (same check as upstream's post-install script).
+if ! { [ -L /proc/self/ns/user ] && unshare --user true; } 2>/dev/null; then
+    chmod 4755 /usr/lib/pulsar/chrome-sandbox || true
+fi
+
+#DEBHELPER#

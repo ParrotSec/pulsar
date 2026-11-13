@@ -1,0 +1,11 @@
+pulsar (1.133.1-0parrot1) echo; urgency=medium
+
+  * Initial release.
+  * Include the ppm submodule (pinned at f29fd1d) in the upstream source
+    tarball.
+  * Rebuild native modules against the pinned Electron 32.3.3 runtime,
+    fetched at build time.
+  * Bootstrap Yarn Classic from npm at build time; the v1 lockfile is
+    not readable by the distro yarnpkg.
+
+ -- Lorenzo "Palinuro" Faletra <palinuro@parrotsec.org>  Fri, 13 Nov 2026 23:56:54 +0100
