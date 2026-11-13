@@ -9,6 +9,10 @@ export YARN_CACHE_FOLDER := $(CURDIR)/debian/yarn-cache
 export npm_config_cache := $(CURDIR)/debian/npm-cache
 export ELECTRON_CACHE := $(CURDIR)/debian/electron-cache
 export npm_config_update_notifier := false
+# sbuild builds run with a HOME that does not exist and cannot be created;
+# electron's install.js (@electron/get cache) and yarn's global-folder probe
+# both need a writable HOME. Point it at an in-tree directory.
+export HOME := $(CURDIR)/debian/home
 # No Playwright-managed browsers and no visual tests in a package build.
 export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD := 1
 
@@ -22,7 +26,8 @@ override_dh_auto_clean:
 	rm -rf $(CURDIR)/node_modules $(CURDIR)/ppm/node_modules \
 	       $(CURDIR)/ppm/bin/node $(CURDIR)/apm-node-* \
 	       $(CURDIR)/debian/tools $(CURDIR)/debian/yarn-cache \
-	       $(CURDIR)/debian/npm-cache $(CURDIR)/debian/electron-cache
+	       $(CURDIR)/debian/npm-cache $(CURDIR)/debian/electron-cache \
+	       $(CURDIR)/debian/home
 
 override_dh_auto_build:
 	# Pulsar pins a Yarn Classic (v1) lockfile; Debian's yarnpkg is Yarn 4,

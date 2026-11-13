@@ -6,6 +6,7 @@ tar-ignore = debian/tools
 tar-ignore = debian/yarn-cache
 tar-ignore = debian/npm-cache
 tar-ignore = debian/electron-cache
+tar-ignore = debian/home
 tar-ignore = debian/.debhelper
 tar-ignore = debian/changelog.dch
 tar-ignore = .*.swp

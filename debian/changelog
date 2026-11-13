@@ -1,3 +1,11 @@
+pulsar (1.133.1-0parrot2) echo; urgency=medium
+
+  * Set HOME to an in-tree directory during the build; electron
+    install.js and yarn need a writable HOME, which sbuild does not
+    provide.
+
+ -- Lorenzo "Palinuro" Faletra <palinuro@parrotsec.org>  Sat, 14 Nov 2026 00:11:02 +0100
+
 pulsar (1.133.1-0parrot1) echo; urgency=medium
 
   * Initial release.
