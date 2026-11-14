@@ -1,3 +1,28 @@
+pulsar (1.133.1-0parrot5) echo; urgency=medium
+
+  * Skip dh_shlibdeps and dh_makeshlibs: the shipped tree is a prebuilt
+    vendor bundle with foreign-arch binaries and a private-rpath git, so
+    dependencies are declared explicitly in debian/control.
+  * Prune development dependencies from the shipped node_modules; the
+    electron package would otherwise ship a second copy of the runtime.
+
+ -- Lorenzo "Palinuro" Faletra <palinuro@parrotsec.org>  Sat, 14 Nov 2026 02:34:38 +0100
+
+pulsar (1.133.1-0parrot4) echo; urgency=medium
+
+  * Restrict architectures to amd64, arm64 and armhf; upstream publishes
+    no riscv64 Electron runtime, so the build cannot run there.
+
+ -- Lorenzo "Palinuro" Faletra <palinuro@parrotsec.org>  Sat, 14 Nov 2026 00:42:39 +0100
+
+pulsar (1.133.1-0parrot3) echo; urgency=medium
+
+  * Skip dh_strip: the Electron runtime and vendored helpers ship
+    prebuilt and pre-stripped, with foreign-arch ELFs that break
+    stripping.
+
+ -- Lorenzo "Palinuro" Faletra <palinuro@parrotsec.org>  Sat, 14 Nov 2026 00:39:14 +0100
+
 pulsar (1.133.1-0parrot2) echo; urgency=medium
 
   * Set HOME to an in-tree directory during the build; electron

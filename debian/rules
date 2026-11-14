@@ -59,6 +59,21 @@ override_dh_auto_build:
 	# cross devices (upstream does the same in CI).
 	cd $(CURDIR)/ppm && TMPDIR=$(CURDIR) $(YARN) install --ignore-engines --frozen-lockfile
 
+# Everything binary here is prebuilt: the Electron runtime .so files
+# already carry a .gnu_debuglink section (objcopy refuses a second one) and
+# vendored helpers include foreign-arch ELFs (7zip-bin ships an arm 7za).
+# Upstream strips its artifacts; nothing to gain from dh_strip here.
+override_dh_strip:
+
+# The packaged tree is a prebuilt vendor bundle: Electron's own .so files, a
+# private git (dugite) built against /tmp/build/curl/lib and 7zip-bin shipping
+# foreign-arch binaries for arm, arm64 and ia32 alongside ours. dpkg-shlibdeps
+# cannot resolve any of that and must not be run over it; runtime libraries
+# are declared in debian/control instead.
+override_dh_makeshlibs:
+
+override_dh_shlibdeps:
+
 override_dh_auto_test:
 
 override_dh_auto_install:
@@ -86,6 +101,16 @@ override_dh_auto_install:
 	# bundled node are kept.
 	cp -a $(CURDIR)/ppm \
 		$(CURDIR)/debian/pulsar/usr/lib/pulsar/resources/app/ppm
+	# Prune development dependencies from the payload the way upstream's
+	# electron-builder does: they are not needed at runtime, and `electron`
+	# in particular would otherwise ship a second copy of the Electron
+	# runtime inside resources/app/node_modules.
+	cd $(CURDIR) && for mod in $$(node -p \
+		"Object.keys(require('./package.json').devDependencies || {}).join(' ')"); do \
+		rm -rf "$(CURDIR)/debian/pulsar/usr/lib/pulsar/resources/app/node_modules/$$mod"; \
+	done
+	rm -rf $(CURDIR)/debian/pulsar/usr/lib/pulsar/resources/app/node_modules/.bin \
+	       $(CURDIR)/debian/pulsar/usr/lib/pulsar/resources/app/node_modules/.yarn-integrity
 	# Launcher script and icon as extraResources (upstream copies these to
 	# resources/ and the post-install script links them into /usr/bin).
 	cp -a $(CURDIR)/pulsar.sh \
